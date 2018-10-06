@@ -74,6 +74,9 @@
         [self drawClockCenterLayer];
         
         [self prepareData];
+        
+        self.userInteractionEnabled = YES;
+        [self becomeFirstResponder];
     }
     return self;
 }
@@ -789,6 +792,22 @@
     return _okButton;
 }
 
+#pragma mark - UIResponder
+
+- (BOOL)canBecomeFirstResponder
+{
+    return YES;
+}
+
+- (NSArray<UIKeyCommand *> *)keyCommands
+{
+    UIKeyCommand *upKeyCommand = [UIKeyCommand keyCommandWithInput:UIKeyInputUpArrow modifierFlags:0 action:@selector(actionUpKeyCommandButtonPressed:)];
+    UIKeyCommand *downKeyCommand = [UIKeyCommand keyCommandWithInput:UIKeyInputDownArrow modifierFlags:0 action:@selector(actionDownKeyCommandButtonPressed:)];
+    UIKeyCommand *tapKeyCommand = [UIKeyCommand keyCommandWithInput:@"\t" modifierFlags:0 action:@selector(actionTapKeyCommandButtonPressed:)];
+    
+    return @[upKeyCommand, downKeyCommand, tapKeyCommand];
+}
+
 #pragma mark - Properties
 
 - (UITapGestureRecognizer *)keyboardHideTapGestureRecognizer
@@ -836,6 +855,37 @@
     return NO;
 }
 
+- (BOOL)_validateHourValue:(NSInteger)newValue
+{
+    if (newValue < 0) {
+        return NO;
+    }
+    // am selected
+    if (self.selectedMorningOrafternoon) {
+        if (newValue > 11) {
+            return NO;
+        }
+    }
+    // pm selected
+    else {
+        if (newValue > 23) {
+            return NO;
+        }
+    }
+    return YES;
+}
+
+- (BOOL)_validateMinValue:(NSInteger)newValue
+{
+    if (newValue < 0) {
+        return NO;
+    }
+    if (newValue > 59) {
+        return NO;
+    }
+    return YES;
+}
+
 #pragma mark - Action
 
 - (void)actionKeyboardHideDoubleTapActionDetected:(id)sedner
@@ -846,6 +896,87 @@
     self.minutesTextField.placeholder = nil;
     self.hoursTextField.text = nil;
     self.minutesTextField.text = nil;
+}
+
+- (void)actionUpKeyCommandButtonPressed:(UIKeyCommand *)keyCommand
+{
+    if (self.hoursTextField.isFirstResponder) {
+        NSInteger value = self.hoursTextField.text.integerValue;
+        value += 1;
+        if ([self _validateHourValue:value]) {
+            self.hoursTextField.text = @(value).stringValue;
+        }
+        return;
+    }
+    if (self.minutesTextField.isFirstResponder) {
+        NSInteger value = self.minutesTextField.text.integerValue;
+        value += 1;
+        if ([self _validateMinValue:value]) {
+            self.minutesTextField.text = @(value).stringValue;
+        }
+        return;
+    }
+    if (self.selectedDate) {
+        NSInteger value = self.hoursLabel.text.integerValue;
+        value += 1;
+        if ([self _validateHourValue:value]) {
+            self.hoursLabel.text = @(value).stringValue;
+        }
+    }
+    else {
+        NSInteger value = self.minutesLabel.text.integerValue;
+        value += 1;
+        if ([self _validateMinValue:value]) {
+            self.minutesLabel.text = @(value).stringValue;
+        }
+    }
+}
+
+- (void)actionDownKeyCommandButtonPressed:(UIKeyCommand *)keyCommand
+{
+    if (self.hoursTextField.isFirstResponder) {
+        NSInteger value = self.hoursTextField.text.integerValue;
+        value -= 1;
+        if ([self _validateHourValue:value]) {
+            self.hoursTextField.text = @(value).stringValue;
+        }
+        return;
+    }
+    if (self.minutesTextField.isFirstResponder) {
+        NSInteger value = self.minutesTextField.text.integerValue;
+        value -= 1;
+        if ([self _validateMinValue:value]) {
+            self.minutesTextField.text = @(value).stringValue;
+        }
+        return;
+    }
+    if (self.selectedDate) {
+        NSInteger value = self.hoursLabel.text.integerValue;
+        value -= 1;
+        if ([self _validateHourValue:value]) {
+            self.hoursLabel.text = @(value).stringValue;
+        }
+    }
+    else {
+        NSInteger value = self.minutesLabel.text.integerValue;
+        value -= 1;
+        if ([self _validateMinValue:value]) {
+            self.minutesLabel.text = @(value).stringValue;
+        }
+    }
+}
+
+- (void)actionTapKeyCommandButtonPressed:(UIKeyCommand *)keyCommand
+{
+    if (!self.hoursTextField.isFirstResponder && !self.minutesTextField.isFirstResponder) {
+        [self.hoursTextField becomeFirstResponder];
+    }
+    else if (self.hoursTextField.isFirstResponder) {
+        [self.minutesTextField becomeFirstResponder];
+    }
+    else if (self.minutesTextField.isFirstResponder) {
+        [self.hoursTextField becomeFirstResponder];
+    }
 }
 
 #pragma mark - UITextFieldDelegate
@@ -889,23 +1020,10 @@
     }
     NSInteger numberValue = inputString.integerValue;
     if ([textField isEqual:self.hoursTextField]) {
-        // am selected
-        if (self.selectedMorningOrafternoon) {
-            if (numberValue > 11) {
-                return NO;
-            }
-        }
-        // pm selected
-        else {
-            if (numberValue > 23) {
-                return NO;
-            }
-        }
+        return [self _validateHourValue:numberValue];
     }
     else {
-        if (numberValue > 60) {
-            return NO;
-        }
+        return [self _validateMinValue:numberValue];
     }
     
     NSString *hoursText = self.hoursLabel.text;

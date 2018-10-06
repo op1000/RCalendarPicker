@@ -292,7 +292,6 @@
 				TargetAttributes = {
 					B038DF971DDBF12900219F1F = {
 						CreatedOnToolsVersion = 8.1;
-						DevelopmentTeam = PUF22HK4ND;
 						ProvisioningStyle = Automatic;
 					};
 					B038DFB01DDBF12900219F1F = {
@@ -558,10 +557,10 @@
 			baseConfigurationReference = 5B9A931BF5FB2EF330FCC220 /* Pods-RCalendarPicker.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				DEVELOPMENT_TEAM = PUF22HK4ND;
+				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = RCalendarPicker/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.ninefolders.RCalendarPicker;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ncjung.RCalendarPicker;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -571,10 +570,10 @@
 			baseConfigurationReference = 9A98DB3FC050F6BA34F1F429 /* Pods-RCalendarPicker.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				DEVELOPMENT_TEAM = PUF22HK4ND;
+				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = RCalendarPicker/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.ninefolders.RCalendarPicker;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ncjung.RCalendarPicker;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;

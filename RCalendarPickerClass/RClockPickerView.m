@@ -75,6 +75,7 @@
         
         [self prepareData];
         
+        [self addGestureRecognizer:self.keyboardHideTapGestureRecognizer];
         self.userInteractionEnabled = YES;
         [self becomeFirstResponder];
     }
@@ -815,7 +816,6 @@
     if (!_keyboardHideTapGestureRecognizer) {
         _keyboardHideTapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(actionKeyboardHideDoubleTapActionDetected:)];
         _keyboardHideTapGestureRecognizer.numberOfTapsRequired = 2;
-        [self addGestureRecognizer:_keyboardHideTapGestureRecognizer];
     }
     return _keyboardHideTapGestureRecognizer;
 }

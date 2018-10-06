@@ -10,13 +10,15 @@
 #import "ClockHelper.h"
 #define kDegreesToRadians(degrees)  ((M_PI * degrees)/ 180)
 
-@interface RClockPickerView()
+@interface RClockPickerView() <UITextFieldDelegate>
 @property (nonatomic,assign) CGFloat  clockRadius;//表盘 圆圈的半径
 @property (nonatomic,assign) CGFloat  clockCalibrationRadius;//表盘刻度 圆圈的半径
 
 @property (nonatomic,strong) UIView   *headerView;//头部 view
 @property (nonatomic,strong) UILabel  *hoursLabel;//时 Label
 @property (nonatomic,strong) UILabel  *minutesLabel;//分 Label
+@property (nonatomic,strong) UITextField  *hoursTextField;
+@property (nonatomic,strong) UITextField  *minutesTextField;
 @property (nonatomic,strong) UILabel  *semicolonLabel;//时 分 的“:”分隔符
 @property (nonatomic,strong) UILabel  *morningLabel;//上午
 @property (nonatomic,strong) UILabel  *afternoonLabel;//下午
@@ -42,10 +44,16 @@
 
 @property (nonatomic,strong) CAShapeLayer *shapeLayer; //表盘中心的小圆圈
 
+@property (strong, nonatomic) UITapGestureRecognizer *keyboardHideTapGestureRecognizer;
+
 @end
 @implementation RClockPickerView
 
--(void)dealloc{}
+-(void)dealloc
+{
+    [self removeGestureRecognizer:self.keyboardHideTapGestureRecognizer];
+}
+
 #pragma mark - init
 
 
@@ -245,6 +253,8 @@
     [self.headerView addSubview:self.minutesLabel];
     [self.headerView addSubview:self.morningLabel];
     [self.headerView addSubview:self.afternoonLabel];
+    [self.headerView addSubview:self.hoursTextField];
+    [self.headerView addSubview:self.minutesTextField];
     
     [self addSubview:self.cancelButton];
     [self addSubview:self.okButton];
@@ -275,10 +285,35 @@
     [self.hoursLabel mas_makeConstraints:^(MASConstraintMaker *make) {
         make.centerY.equalTo(self.semicolonLabel);
         make.right.equalTo(self.semicolonLabel.mas_left);
+        CGSize textSize = [@"00" sizeWithAttributes:@{NSFontAttributeName:[self.hoursLabel font]}];
+        textSize.width += 10.0;
+        make.width.equalTo(@(textSize.width));
     }];
     [self.minutesLabel mas_makeConstraints:^(MASConstraintMaker *make) {
         make.centerY.equalTo(self.semicolonLabel);
         make.left.equalTo(self.semicolonLabel.mas_right);
+        CGSize textSize = [@"00" sizeWithAttributes:@{NSFontAttributeName:[self.minutesLabel font]}];
+        textSize.width += 10.0;
+        make.width.equalTo(@(textSize.width));
+    }];
+    [self.hoursTextField mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.hoursLabel.mas_top);
+        make.left.equalTo(self.hoursLabel.mas_left);
+        make.bottom.equalTo(self.hoursLabel.mas_bottom);
+        make.right.equalTo(self.hoursLabel.mas_right);
+    }];
+    [self.minutesTextField mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.minutesLabel.mas_top);
+        make.left.equalTo(self.minutesLabel.mas_left);
+        make.bottom.equalTo(self.minutesLabel.mas_bottom);
+        make.right.equalTo(self.minutesLabel.mas_right);
+    }];
+    [self.minutesLabel mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.centerY.equalTo(self.semicolonLabel);
+        make.left.equalTo(self.semicolonLabel.mas_right);
+        CGSize textSize = [@"00" sizeWithAttributes:@{NSFontAttributeName:[self.minutesLabel font]}];
+        textSize.width += 10.0;
+        make.width.equalTo(@(textSize.width));
     }];
     [self.morningLabel mas_makeConstraints:^(MASConstraintMaker *make) {
         make.bottom.equalTo(self.minutesLabel.mas_centerY).offset(-1.5);
@@ -499,7 +534,6 @@
         }
         self.selectMinutes = minutes;
         self.minutesLabel.text = minutesStr;
-        
     }
     else{
         int minutes        = (int)[ClockHelper getMinutesWithAngles:angle];
@@ -520,6 +554,7 @@
         //设置时针的偏移 矫正
         [self.hoursView setTransform:CGAffineTransformMakeRotation([ClockHelper getAnglesWithHoursAndMinutes:self.selectHours minutes:minutes])];
     }
+    [self _resetHeaderViewsUI];
 }
 
 
@@ -532,6 +567,10 @@
     self.selectedDate = YES;
     self.minutesLabel.alpha = 0.5;
     self.hoursLabel.alpha = 1;
+    
+    [self.hoursTextField becomeFirstResponder];
+    self.hoursTextField.placeholder = self.hoursLabel.text;
+    self.hoursLabel.alpha = 0;
 }
 
 /**
@@ -541,6 +580,10 @@
     self.selectedDate = NO;
     self.minutesLabel.alpha = 1;
     self.hoursLabel.alpha = 0.5;
+    
+    [self.minutesTextField becomeFirstResponder];
+    self.minutesTextField.placeholder = self.minutesLabel.text;
+    self.minutesLabel.alpha = 0;
 }
 
 /**
@@ -639,7 +682,7 @@
         _hoursLabel = [[UILabel alloc]init];
         [_hoursLabel setFont:[UIFont boldSystemFontOfSize:70]];
         [_hoursLabel setTextColor:RGB16(0xffffff)];
-        [_hoursLabel setTextAlignment:NSTextAlignmentCenter];
+        [_hoursLabel setTextAlignment:NSTextAlignmentRight];
         _hoursLabel.userInteractionEnabled = YES;
         UITapGestureRecognizer *tapGesture = [[UITapGestureRecognizer alloc]initWithTarget:self action:@selector(hoursSelectedAction)];
         [_hoursLabel addGestureRecognizer:tapGesture];
@@ -657,6 +700,34 @@
         [_minutesLabel addGestureRecognizer:tapGesture];
     }
     return _minutesLabel;
+}
+-(UITextField *)hoursTextField{
+    if (!_hoursTextField) {
+        _hoursTextField = [[UITextField alloc]init];
+        [_hoursTextField setTextColor:RGB16(0xffffff)];
+        [_hoursTextField setFont:[UIFont boldSystemFontOfSize:70]];
+        [_hoursTextField setTextAlignment:NSTextAlignmentRight];
+        _hoursTextField.userInteractionEnabled = YES;
+        _hoursTextField.keyboardType = UIKeyboardTypeDecimalPad;
+        _hoursTextField.keyboardAppearance = UIKeyboardAppearanceDefault;
+        _hoursTextField.tintColor = UIColor.whiteColor;
+        _hoursTextField.delegate = self;
+    }
+    return _hoursTextField;
+}
+-(UITextField *)minutesTextField{
+    if (!_minutesTextField) {
+        _minutesTextField = [[UITextField alloc]init];
+        [_minutesTextField setTextColor:RGB16(0xffffff)];
+        [_minutesTextField setFont:[UIFont boldSystemFontOfSize:70]];
+        [_minutesTextField setTextAlignment:NSTextAlignmentCenter];
+        _minutesTextField.userInteractionEnabled = YES;
+        _minutesTextField.keyboardType = UIKeyboardTypeDecimalPad;
+        _minutesTextField.keyboardAppearance = UIKeyboardAppearanceDefault;
+        _minutesTextField.tintColor = UIColor.whiteColor;
+        _minutesTextField.delegate = self;
+    }
+    return _minutesTextField;
 }
 -(UILabel *)semicolonLabel{
     if (!_semicolonLabel) {
@@ -717,5 +788,139 @@
     }
     return _okButton;
 }
+
+#pragma mark - Properties
+
+- (UITapGestureRecognizer *)keyboardHideTapGestureRecognizer
+{
+    if (!_keyboardHideTapGestureRecognizer) {
+        _keyboardHideTapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(actionKeyboardHideDoubleTapActionDetected:)];
+        _keyboardHideTapGestureRecognizer.numberOfTapsRequired = 2;
+        [self addGestureRecognizer:_keyboardHideTapGestureRecognizer];
+    }
+    return _keyboardHideTapGestureRecognizer;
+}
+
+#pragma mark - Private
+
+- (BOOL)_resetHeaderViewsUI
+{
+    if (self.selectedDate) {
+        self.minutesLabel.alpha = 0.5;
+        self.hoursLabel.alpha = 1;
+    }
+    else {
+        self.minutesLabel.alpha = 1;
+        self.hoursLabel.alpha = 0.5;
+    }
+    [self.hoursTextField resignFirstResponder];
+    [self.minutesTextField resignFirstResponder];
+    self.hoursTextField.placeholder = nil;
+    self.minutesTextField.placeholder = nil;
+    self.hoursTextField.text = nil;
+    self.minutesTextField.text = nil;
+    return YES;
+}
+
+- (BOOL)_isNumericString:(NSString *)numberString
+{
+    NSScanner *sc = [NSScanner scannerWithString:numberString];
+    // We can pass NULL because we don't actually need the value to test
+    // for if the string is numeric. This is allowable.
+    if ([sc scanFloat:NULL]) {
+        // Ensure nothing left in scanner so that "42foo" is not accepted.
+        // ("42" would be consumed by scanFloat above leaving "foo".)
+        return [sc isAtEnd];
+    }
+    // Couldn't even scan a float :(
+    return NO;
+}
+
+#pragma mark - Action
+
+- (void)actionKeyboardHideDoubleTapActionDetected:(id)sedner
+{
+    [self.hoursTextField resignFirstResponder];
+    [self.minutesTextField resignFirstResponder];
+    self.hoursTextField.placeholder = nil;
+    self.minutesTextField.placeholder = nil;
+    self.hoursTextField.text = nil;
+    self.minutesTextField.text = nil;
+}
+
+#pragma mark - UITextFieldDelegate
+
+- (BOOL)textFieldShouldBeginEditing:(UITextField *)textField;        // return NO to disallow editing.
+{
+    self.hoursTextField.placeholder = nil;
+    self.minutesTextField.placeholder = nil;
+    self.hoursTextField.text = nil;
+    self.minutesTextField.text = nil;
+    
+    if ([textField isEqual:self.hoursTextField]) {
+        self.hoursTextField.text = self.hoursLabel.text;
+    }
+    else {
+        self.minutesTextField.text = self.minutesLabel.text;
+    }
+    return YES;
+}
+- (void)textFieldDidBeginEditing:(UITextField *)textField;           // became first responder
+{
+    if ([textField isEqual:self.hoursTextField]) {
+        [self hoursSelectedAction];
+    }
+    else {
+        [self minutesSelectedAction];
+    }
+}
+//- (BOOL)textFieldShouldEndEditing:(UITextField *)textField;          // return YES to allow editing to stop and to resign first responder status. NO to disallow the editing session to end
+//- (void)textFieldDidEndEditing:(UITextField *)textField;             // may be called if forced even if shouldEndEditing returns NO (e.g. view removed from window) or endEditing:YES called
+//- (void)textFieldDidEndEditing:(UITextField *)textField reason:(UITextFieldDidEndEditingReason)reason NS_AVAILABLE_IOS(10_0); // if implemented, called in place of textFieldDidEndEditing:
+
+- (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string;   // return NO to not change text
+{
+    NSString *inputString = [textField.text stringByReplacingCharactersInRange:range withString:string];
+    if (inputString.length == 0) {
+        return YES;
+    }
+    if (![self _isNumericString:inputString]) {
+        return NO;
+    }
+    NSInteger numberValue = inputString.integerValue;
+    if ([textField isEqual:self.hoursTextField]) {
+        // am selected
+        if (self.selectedMorningOrafternoon) {
+            if (numberValue > 11) {
+                return NO;
+            }
+        }
+        // pm selected
+        else {
+            if (numberValue > 23) {
+                return NO;
+            }
+        }
+    }
+    else {
+        if (numberValue > 60) {
+            return NO;
+        }
+    }
+    
+    NSString *hoursText = self.hoursLabel.text;
+    NSString *minutesText = self.minutesLabel.text;
+    if ([textField isEqual:self.hoursTextField]) {
+        hoursText = inputString;
+    }
+    else {
+        minutesText = inputString;
+    }
+    [self updateDefaultUiViewForHours:hoursText.integerValue minute:minutesText.integerValue];
+    return YES;
+}
+
+//- (BOOL)textFieldShouldClear:(UITextField *)textField;               // called when clear button pressed. return NO to ignore (no notifications)
+//- (BOOL)textFieldShouldReturn:(UITextField *)textField;              // called when 'return' key pressed. return NO to ignore.
 
 @end
